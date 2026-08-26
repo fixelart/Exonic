@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exo Game Arena - Free Online Games</title>
     <meta name="description" content="Play 100+ free online games instantly on Exo Game Arena">
     
+    <!-- External dependencies remain. If you experience loading failures, consider self-hosting these files. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
@@ -39,7 +40,8 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         /* Search Clear */
-        .search-clear { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; }
+        .search-clear { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; border: none; }
+        .search-clear:hover { background: rgba(255,255,255,0.3); }
         
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #1e1b4b; }
@@ -70,7 +72,7 @@
         <!-- Search -->
         <div class="relative max-w-lg mx-auto mb-8">
             <input type="text" id="searchInput" placeholder="🔎 Search game..." class="w-full px-6 py-4 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 pr-12">
-            <div id="searchClear" class="search-clear hidden">✕</div>
+            <button id="searchClear" class="search-clear hidden" type="button" aria-label="Clear search">✕</button>
         </div>
         
         <!-- Categories -->
@@ -97,80 +99,189 @@
     </div>
 
     <script>
-        // আপনার CSV লিংক (ইতিমধ্যে বসানো আছে)
+        // Your CSV link (already inserted)
         const csvUrl = 'https://docs.google.com/spreadsheets/d/1KOYxfabYXTEi0QaGxO-zzZUhAQL15zZlhflrqwRLeEE/export?format=csv';
         
         let allGames = [];
         let currentCat = 'all';
         let currentSearch = '';
 
+        // Function to handle errors from loading/parsing
+        function handleLoadError() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error').classList.remove('hidden');
+        }
+
+        // Improved category detection with more keywords
         function getGameCategory(game) {
-            const name = (game.Name || game.name || '').toLowerCase();
-            if (name.includes('race') || name.includes('car') || name.includes('drive')) return 'racing';
-            if (name.includes('puzzle') || name.includes('match') || name.includes('brain')) return 'puzzle';
-            if (name.includes('sport') || name.includes('football') || name.includes('basket')) return 'sports';
-            if (name.includes('arcade') || name.includes('classic')) return 'arcade';
+            const explicitCategory = String(game.Category || game.category || '').toLowerCase().trim();
+            if (explicitCategory) {
+                const knownCats = ['action', 'puzzle', 'racing', 'sports', 'arcade'];
+                if (knownCats.includes(explicitCategory)) return explicitCategory;
+            }
+            
+            const name = String(game.Name || game.name || '').toLowerCase();
+            if (name.includes('race') || name.includes('car') || name.includes('drive') || name.includes('speed')) return 'racing';
+            if (name.includes('puzzle') || name.includes('match') || name.includes('brain') || name.includes('word') || name.includes('sudoku')) return 'puzzle';
+            if (name.includes('sport') || name.includes('football') || name.includes('basket') || name.includes('soccer') || name.includes('tennis')) return 'sports';
+            if (name.includes('arcade') || name.includes('classic') || name.includes('retro')) return 'arcade';
             return 'action';
         }
 
         function filterGames() {
             let filtered = [...allGames];
-            if (currentSearch) filtered = filtered.filter(g => (g.Name || g.name || '').toLowerCase().includes(currentSearch));
-            if (currentCat !== 'all') filtered = filtered.filter(g => getGameCategory(g) === currentCat);
+            if (currentSearch) {
+                const searchTerm = currentSearch.toLowerCase();
+                filtered = filtered.filter(game => {
+                    const gameName = String(game.Name || game.name || '').toLowerCase();
+                    return gameName.includes(searchTerm);
+                });
+            }
+            if (currentCat !== 'all') {
+                filtered = filtered.filter(game => getGameCategory(game) === currentCat);
+            }
             displayGames(filtered);
         }
 
         async function fetchGames() {
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('error').classList.add('hidden');
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error');
+            loadingEl.classList.remove('hidden');
+            errorEl.classList.add('hidden');
+            
             try {
-                const res = await fetch(csvUrl);
-                if (!res.ok) throw new Error();
-                const csv = await res.text();
-                Papa.parse(csv, {
+                const response = await fetch(csvUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                const csvText = await response.text();
+                Papa.parse(csvText, {
                     header: true,
                     skipEmptyLines: true,
                     complete: (results) => {
+                        if (results.errors && results.errors.length > 0) {
+                            console.error('CSV parsing errors:', results.errors);
+                            handleLoadError();
+                            return;
+                        }
                         allGames = results.data;
                         filterGames();
-                        document.getElementById('loading').classList.add('hidden');
+                        loadingEl.classList.add('hidden');
                     },
-                    error: () => { document.getElementById('loading').classList.add('hidden'); document.getElementById('error').classList.remove('hidden'); }
+                    error: (err) => {
+                        console.error('PapaParse error:', err);
+                        handleLoadError();
+                    }
                 });
-            } catch { document.getElementById('loading').classList.add('hidden'); document.getElementById('error').classList.remove('hidden'); }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                handleLoadError();
+            }
         }
 
         function displayGames(games) {
             const grid = document.getElementById('gameGrid');
             grid.innerHTML = '';
-            if (!games.length) { grid.innerHTML = '<div class="col-span-full text-center py-20 text-gray-400">😔 No games found</div>'; document.getElementById('gameCount').innerHTML = '🎮 0 games'; return; }
+            
+            if (!games.length) {
+                grid.innerHTML = '<div class="col-span-full text-center py-20 text-gray-400">😔 No games found</div>';
+                document.getElementById('gameCount').innerHTML = '🎮 0 games';
+                return;
+            }
             
             games.forEach(game => {
-                const name = game.Name || game.name || 'Unknown';
-                let icon = game.Icon || game.icon || '';
-                const link = game.Link || game.link || '#';
+                const name = String(game.Name || game.name || 'Unknown').trim();
+                let icon = String(game.Icon || game.icon || '').trim();
+                const link = String(game.Link || game.link || '').trim();
+                
                 if (!icon) icon = 'https://placehold.co/400x400/1e1b4b/ffffff?text=🎮';
                 
                 const card = document.createElement('div');
                 card.className = 'game-card bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20';
-                card.innerHTML = `<div class="aspect-square rounded-xl overflow-hidden bg-gray-800 mb-3"><img src="${icon}" alt="${name}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='https://placehold.co/400x400/2d2d5e/ffffff?text=🎮'"></div><h3 class="text-white font-bold truncate">${name}</h3><button class="play-btn mt-3 w-full bg-gradient-to-r from-blue-500 to-purple-600 py-2 rounded-full text-sm">🎮 Play</button>`;
-                card.querySelector('.play-btn').onclick = (e) => { e.stopPropagation(); if (link !== '#') window.open(link, '_blank'); else alert('Link coming soon'); };
+                
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'aspect-square rounded-xl overflow-hidden bg-gray-800 mb-3';
+                
+                const img = document.createElement('img');
+                img.src = icon;
+                img.alt = name;
+                img.className = 'w-full h-full object-cover';
+                img.loading = 'lazy';
+                img.onerror = function() { this.src = 'https://placehold.co/400x400/2d2d5e/ffffff?text=🎮'; };
+                imgContainer.appendChild(img);
+                
+                const title = document.createElement('h3');
+                title.className = 'text-white font-bold truncate';
+                title.textContent = name;
+                
+                const playBtn = document.createElement('button');
+                playBtn.className = 'play-btn mt-3 w-full bg-gradient-to-r from-blue-500 to-purple-600 py-2 rounded-full text-sm';
+                playBtn.textContent = '🎮 Play';
+                playBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (link && link !== '#') {
+                        window.open(link, '_blank', 'noopener,noreferrer');
+                    } else {
+                        alert('Link coming soon');
+                    }
+                });
+                
+                card.appendChild(imgContainer);
+                card.appendChild(title);
+                card.appendChild(playBtn);
+                
                 grid.appendChild(card);
             });
+            
             document.getElementById('gameCount').innerHTML = `🎮 ${games.length} games`;
         }
 
         // Event Listeners
-        document.getElementById('searchInput').addEventListener('input', (e) => { currentSearch = e.target.value.toLowerCase().trim(); document.getElementById('searchClear').classList.toggle('hidden', !currentSearch); filterGames(); });
-        document.getElementById('searchClear').addEventListener('click', () => { document.getElementById('searchInput').value = ''; currentSearch = ''; document.getElementById('searchClear').classList.add('hidden'); filterGames(); });
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            currentSearch = e.target.value.toLowerCase().trim();
+            document.getElementById('searchClear').classList.toggle('hidden', !currentSearch);
+            filterGames();
+        });
         
-        document.querySelectorAll('.category-btn').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentCat = btn.dataset.cat; filterGames(); }); });
+        document.getElementById('searchClear').addEventListener('click', () => {
+            document.getElementById('searchInput').value = '';
+            currentSearch = '';
+            document.getElementById('searchClear').classList.add('hidden');
+            filterGames();
+        });
         
-        window.addEventListener('scroll', () => { document.getElementById('topBtn').classList.toggle('show', window.scrollY > 300); });
-        document.getElementById('topBtn').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-        document.getElementById('resetBtn').addEventListener('click', () => { document.getElementById('searchInput').value = ''; currentSearch = ''; document.getElementById('searchClear').classList.add('hidden'); document.querySelector('[data-cat="all"]').click(); });
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCat = btn.dataset.cat;
+                filterGames();
+            });
+        });
         
+        window.addEventListener('scroll', () => {
+            document.getElementById('topBtn').classList.toggle('show', window.scrollY > 300);
+        });
+        
+        document.getElementById('topBtn').addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            document.getElementById('searchInput').value = '';
+            currentSearch = '';
+            document.getElementById('searchClear').classList.add('hidden');
+            document.querySelector('[data-cat="all"]').click();
+        });
+        
+        // Load games
         fetchGames();
     </script>
+    
+    <!-- Existing ad script and container (if you want to keep it) -->
+    <script async="async" data-cfasync="false" src="https://pl31021567.profitableratecpmnetwork.com/145a49eb90a1e950175c775b03535928/invoke.js"></script>
+    <div id="container-145a49eb90a1e950175c775b03535928"></div>
+
+    <!-- Newly provided ad script connected here -->
+    <script src="https://pl31021568.profitableratecpmnetwork.com/46/c6/67/46c667be18dd3e77d7054138c291e339.js"></script>
 </body>
 </html>
