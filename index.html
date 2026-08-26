@@ -1,83 +1,82 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exo Game Arena - Free Online Games</title>
-    <meta name="description" content="Play 100+ free online games instantly on Exo Game Arena">
+    <title>Exonic - Free Online Games</title>
+    <meta name="description" content="Play 100+ free online games instantly on Exonic">
     
-    <!-- External dependencies remain. If you experience loading failures, consider self-hosting these files. -->
+    <!-- Open Graph for Social Sharing -->
+    <meta property="og:title" content="Exonic - Free Online Games">
+    <meta property="og:description" content="Play 100+ free online games instantly!">
+    <meta property="og:type" content="website">
+
+    <!-- External dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Fredoka', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); min-height: 100vh; }
+        body { font-family: 'Fredoka', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); min-height: 100vh; color: white; }
         
         /* Fixed Buttons */
         .fixed-btn { position: fixed; bottom: 30px; width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #f97316, #dc2626); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: all 0.3s; z-index: 1000; opacity: 0; visibility: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .fixed-btn.show { opacity: 1; visibility: visible; }
         .fixed-btn:hover { transform: scale(1.1); }
-        .reset-btn { right: 100px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
-        .top-btn { right: 30px; }
+        .reset-btn { right: 90px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+        .top-btn { right: 25px; }
         
-        /* Category Buttons */
-        .category-btn { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 8px 20px; border-radius: 50px; font-size: 14px; font-weight: 600; transition: all 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); color: white; }
+        /* Category Buttons Horizontal Scroll */
+        .category-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
+        .category-container::-webkit-scrollbar { display: none; }
+        
+        .category-btn { white-space: nowrap; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 8px 20px; border-radius: 50px; font-size: 14px; font-weight: 600; transition: all 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); color: white; }
         .category-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
         .category-btn.active { background: linear-gradient(135deg, #ec4899, #8b5cf6); border-color: transparent; }
         
-        /* Game Cards */
-        .game-card { transition: all 0.3s; cursor: pointer; animation: fadeInUp 0.4s ease-out forwards; opacity: 0; }
-        .game-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 20px 35px -12px rgba(0,0,0,0.5); background: rgba(255,255,255,0.15) !important; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        /* Game Cards Animation */
+        .game-card { transition: all 0.3s; cursor: pointer; animation: fadeInUp 0.4s ease-out forwards; }
+        .game-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 15px 30px rgba(0,0,0,0.4); background: rgba(255,255,255,0.15) !important; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Sticky Header */
         .sticky-header { position: sticky; top: 0; background: rgba(15,23,42,0.95); backdrop-filter: blur(15px); z-index: 99; border-bottom: 1px solid rgba(255,255,255,0.1); }
         
-        /* Loader */
         .loader { border-top-color: #f97316; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Search Clear */
-        .search-clear { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; border: none; }
+        .search-clear { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; border: none; }
         .search-clear:hover { background: rgba(255,255,255,0.3); }
         
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #1e1b4b; }
         ::-webkit-scrollbar-thumb { background: #f97316; border-radius: 4px; }
-        
-        @media (max-width: 640px) {
-            .reset-btn { right: 80px; width: 45px; height: 45px; font-size: 20px; }
-            .top-btn { right: 20px; width: 45px; height: 45px; font-size: 20px; }
-            .category-btn { padding: 6px 16px; font-size: 12px; }
-        }
     </style>
 </head>
 <body>
 
-    <!-- Fixed Buttons -->
-    <button id="resetBtn" class="fixed-btn reset-btn" title="Reset">⟳</button>
+    <!-- Fixed Floating Buttons -->
+    <button id="resetBtn" class="fixed-btn reset-btn" title="Reset Filters">⟳</button>
     <button id="topBtn" class="fixed-btn top-btn" title="Go to top">↑</button>
 
     <!-- Sticky Header -->
-    <div class="sticky-header">
+    <header class="sticky-header">
         <div class="max-w-7xl mx-auto px-4 py-4 text-center">
-            <h1 class="text-3xl md:text-5xl font-extrabold"><span class="text-white">play on</span> <span class="text-pink-500">Exo game!</span></h1>
-            <p class="text-indigo-300 text-sm md:text-base">🎮 100+ free games | Play instantly 🎮</p>
+            <h1 class="text-3xl md:text-5xl font-extrabold"><span class="text-white">Play on</span> <span class="text-pink-500">Exonic!</span></h1>
+            <p class="text-indigo-300 text-sm md:text-base mt-1">🎮 Free Online Games | Instant Play 🎮</p>
         </div>
-    </div>
+    </header>
 
-    <div class="max-w-7xl mx-auto px-4 py-6">
-        <!-- Search -->
-        <div class="relative max-w-lg mx-auto mb-8">
-            <input type="text" id="searchInput" placeholder="🔎 Search game..." class="w-full px-6 py-4 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 pr-12">
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Search Box -->
+        <div class="relative max-w-lg mx-auto mb-6">
+            <input type="text" id="searchInput" placeholder="🔎 Search your favorite game..." class="w-full px-6 py-3.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 pr-12">
             <button id="searchClear" class="search-clear hidden" type="button" aria-label="Clear search">✕</button>
         </div>
         
-        <!-- Categories -->
-        <div class="flex flex-wrap justify-center gap-3 mb-8">
-            <button class="category-btn active" data-cat="all">🎲 All</button>
+        <!-- Responsive Categories Horizontal Bar -->
+        <div class="category-container justify-start md:justify-center mb-6">
+            <button class="category-btn active" data-cat="all">🎲 All Games</button>
             <button class="category-btn" data-cat="action">🏃 Action</button>
             <button class="category-btn" data-cat="puzzle">🧩 Puzzle</button>
             <button class="category-btn" data-cat="racing">🏎️ Racing</button>
@@ -85,34 +84,43 @@
             <button class="category-btn" data-cat="arcade">👾 Arcade</button>
         </div>
 
-        <!-- Stats -->
-        <p id="gameCount" class="text-gray-300 mb-6">🎮 Loading games...</p>
+        <!-- Total Stats Indicator -->
+        <div class="flex justify-between items-center mb-4">
+            <p id="gameCount" class="text-gray-300 text-sm md:text-base font-medium">🎮 Loading games...</p>
+        </div>
 
-        <!-- Loading & Error -->
-        <div id="loading" class="flex flex-col items-center py-20"><div class="loader rounded-full border-8 border-gray-700 border-t-orange-500 h-16 w-16 mb-4"></div><p class="text-gray-300">Loading games... 🚀</p></div>
-        <div id="error" class="hidden text-center py-20 bg-red-900/30 rounded-2xl"><p class="text-red-400">⚠️ Failed to load games</p><button onclick="location.reload()" class="mt-4 bg-red-500 px-6 py-2 rounded-full">🔄 Retry</button></div>
-
-        <!-- Game Grid -->
-        <div id="gameGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"></div>
+        <!-- Loading Spinner -->
+        <div id="loading" class="flex flex-col items-center py-20">
+            <div class="loader rounded-full border-4 border-gray-700 border-t-orange-500 h-12 w-12 mb-4"></div>
+            <p class="text-gray-300">Fetching games, please wait... 🚀</p>
+        </div>
         
-        <footer class="mt-16 pt-8 border-t border-white/10 text-center text-gray-400 text-sm">© 2024 Exo Game Arena | Play responsibly 🎮</footer>
-    </div>
+        <!-- Error Alert -->
+        <div id="error" class="hidden text-center py-12 bg-red-900/30 border border-red-500/30 rounded-2xl">
+            <p class="text-red-400 font-semibold text-lg">⚠️ Failed to load games library</p>
+            <button onclick="fetchGames()" class="mt-4 bg-red-500 hover:bg-red-600 px-6 py-2 rounded-full font-medium transition">🔄 Retry</button>
+        </div>
+
+        <!-- Game Cards Grid -->
+        <div id="gameGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6"></div>
+        
+        <footer class="mt-16 pt-8 border-t border-white/10 text-center text-gray-400 text-sm">
+            © 2026 Exonic | All Rights Reserved. Play Responsibly 🎮
+        </footer>
+    </main>
 
     <script>
-        // Your CSV link (already inserted)
         const csvUrl = 'https://docs.google.com/spreadsheets/d/1KOYxfabYXTEi0QaGxO-zzZUhAQL15zZlhflrqwRLeEE/export?format=csv';
         
         let allGames = [];
         let currentCat = 'all';
         let currentSearch = '';
 
-        // Function to handle errors from loading/parsing
         function handleLoadError() {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('error').classList.remove('hidden');
         }
 
-        // Improved category detection with more keywords
         function getGameCategory(game) {
             const explicitCategory = String(game.Category || game.category || '').toLowerCase().trim();
             if (explicitCategory) {
@@ -151,15 +159,14 @@
             
             try {
                 const response = await fetch(csvUrl);
-                if (!response.ok) throw new Error('Network response was not ok');
+                if (!response.ok) throw new Error('Network error');
                 
                 const csvText = await response.text();
                 Papa.parse(csvText, {
                     header: true,
                     skipEmptyLines: true,
                     complete: (results) => {
-                        if (results.errors && results.errors.length > 0) {
-                            console.error('CSV parsing errors:', results.errors);
+                        if (results.errors && results.errors.length > 0 && results.data.length === 0) {
                             handleLoadError();
                             return;
                         }
@@ -167,13 +174,9 @@
                         filterGames();
                         loadingEl.classList.add('hidden');
                     },
-                    error: (err) => {
-                        console.error('PapaParse error:', err);
-                        handleLoadError();
-                    }
+                    error: () => handleLoadError()
                 });
             } catch (error) {
-                console.error('Fetch error:', error);
                 handleLoadError();
             }
         }
@@ -183,20 +186,20 @@
             grid.innerHTML = '';
             
             if (!games.length) {
-                grid.innerHTML = '<div class="col-span-full text-center py-20 text-gray-400">😔 No games found</div>';
-                document.getElementById('gameCount').innerHTML = '🎮 0 games';
+                grid.innerHTML = '<div class="col-span-full text-center py-16 text-gray-400">😔 No games found matching your search.</div>';
+                document.getElementById('gameCount').innerHTML = '🎮 0 games available';
                 return;
             }
             
             games.forEach(game => {
-                const name = String(game.Name || game.name || 'Unknown').trim();
+                const name = String(game.Name || game.name || 'Game').trim();
                 let icon = String(game.Icon || game.icon || '').trim();
                 const link = String(game.Link || game.link || '').trim();
                 
                 if (!icon) icon = 'https://placehold.co/400x400/1e1b4b/ffffff?text=🎮';
                 
                 const card = document.createElement('div');
-                card.className = 'game-card bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20';
+                card.className = 'game-card bg-white/10 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-white/20 flex flex-col justify-between';
                 
                 const imgContainer = document.createElement('div');
                 imgContainer.className = 'aspect-square rounded-xl overflow-hidden bg-gray-800 mb-3';
@@ -210,20 +213,26 @@
                 imgContainer.appendChild(img);
                 
                 const title = document.createElement('h3');
-                title.className = 'text-white font-bold truncate';
+                title.className = 'text-white font-bold text-sm md:text-base truncate';
                 title.textContent = name;
                 
                 const playBtn = document.createElement('button');
-                playBtn.className = 'play-btn mt-3 w-full bg-gradient-to-r from-blue-500 to-purple-600 py-2 rounded-full text-sm';
-                playBtn.textContent = '🎮 Play';
-                playBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
+                playBtn.className = 'play-btn mt-3 w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 font-semibold py-2 rounded-full text-xs md:text-sm transition';
+                playBtn.textContent = '🎮 Play Now';
+                
+                const launchGame = () => {
                     if (link && link !== '#') {
                         window.open(link, '_blank', 'noopener,noreferrer');
                     } else {
-                        alert('Link coming soon');
+                        alert('Game link is currently unavailable.');
                     }
+                };
+
+                playBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    launchGame();
                 });
+                card.addEventListener('click', launchGame);
                 
                 card.appendChild(imgContainer);
                 card.appendChild(title);
@@ -232,7 +241,7 @@
                 grid.appendChild(card);
             });
             
-            document.getElementById('gameCount').innerHTML = `🎮 ${games.length} games`;
+            document.getElementById('gameCount').innerHTML = `🎮 Showing ${games.length} games`;
         }
 
         // Event Listeners
@@ -260,6 +269,7 @@
         
         window.addEventListener('scroll', () => {
             document.getElementById('topBtn').classList.toggle('show', window.scrollY > 300);
+            document.getElementById('resetBtn').classList.toggle('show', window.scrollY > 300);
         });
         
         document.getElementById('topBtn').addEventListener('click', () => {
@@ -273,15 +283,13 @@
             document.querySelector('[data-cat="all"]').click();
         });
         
-        // Load games
+        // Initial Fetch
         fetchGames();
     </script>
     
-    <!-- Existing ad script and container (if you want to keep it) -->
-    <script async="async" data-cfasync="false" src="https://pl31021567.profitableratecpmnetwork.com/145a49eb90a1e950175c775b03535928/invoke.js"></script>
+    <!-- Ads Scripts -->
+    <script async src="https://pl31021567.profitableratecpmnetwork.com/145a49eb90a1e950175c775b03535928/invoke.js"></script>
     <div id="container-145a49eb90a1e950175c775b03535928"></div>
-
-    <!-- Newly provided ad script connected here -->
-    <script src="https://pl31021568.profitableratecpmnetwork.com/46/c6/67/46c667be18dd3e77d7054138c291e339.js"></script>
+    <script async src="https://pl31021568.profitableratecpmnetwork.com/46/c6/67/46c667be18dd3e77d7054138c291e339.js"></script>
 </body>
 </html>
